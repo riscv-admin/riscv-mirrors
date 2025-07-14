@@ -1,0 +1,33 @@
+name: Mirror Mavis to riscv-mirror-fsl
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # daily at 00:00 UTC
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Git identity
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Clone source repository
+        run: |
+
+            # Get default branch name
+            DEFAULT_BRANCH=$(git ls-remote --symref https://github.com/Condor-Performance-Modeling/fsl.git HEAD | grep '^ref:' | sed 's#^ref: refs/heads/##; s#\sHEAD##')
+            echo "Default branch is: $DEFAULT_BRANCH"
+
+            # Clone only that branch
+            git clone --branch "$DEFAULT_BRANCH" --single-branch https://github.com/Condor-Performance-Modeling/fsl.git fsl
+            cd fsl
+
+            git remote set-url --push origin https://x-access-token:${{ secrets.GHTOKEN }}@github.com/riscv-software-src/riscv-mirror-fsl.git
+
+            # Push only default branch and tags
+            git push origin "$DEFAULT_BRANCH" --force
+            git push origin --tags
